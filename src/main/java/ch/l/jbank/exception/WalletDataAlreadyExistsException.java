@@ -13,6 +13,7 @@ public class WalletDataAlreadyExistsException extends JBankException {
 
     @Override
     public ProblemDetail toProblemDetail() {
+
         var pd = ProblemDetail.forStatus(422);
 
         pd.setTitle("Wallet data already exists");
