@@ -1,13 +1,16 @@
 package ch.l.jbank.service;
 
-import ch.l.jbank.controller.dto.CreateWalletDto;
-import ch.l.jbank.controller.dto.DepositMoneyDto;
+import ch.l.jbank.controller.dto.*;
 import ch.l.jbank.entities.Deposit;
 import ch.l.jbank.exception.DeleteWalletException;
+import ch.l.jbank.exception.StatementException;
 import ch.l.jbank.exception.WalletDataAlreadyExistsException;
 import ch.l.jbank.exception.WalletNotFoundException;
 import ch.l.jbank.repository.DepositRepository;
 import ch.l.jbank.repository.WalletRepository;
+import ch.l.jbank.repository.dto.StatementView;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ch.l.jbank.entities.Wallet;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,4 +86,77 @@ public class WalletService {
 
 
     }
+
+    public StatementDto getStatements(UUID walletId, Integer page, Integer pageSize) {
+
+        var wallet = walletRepository.findById(walletId)
+                .orElseThrow(() -> new WalletNotFoundException("there is no wallet with this id"));
+
+        var pageRequest = PageRequest.of(page, pageSize, Sort.Direction.DESC, "statement_date_time");
+
+        var statements = walletRepository.findStatements(walletId.toString(), pageRequest)
+                .map(view -> mapToDto(walletId, view));
+
+        return new StatementDto(
+                new WalletDto(wallet.getWalletId(), wallet.getCpf(), wallet.getName(), wallet.getEmail(), wallet.getBalance()),
+                statements.getContent(),
+                new PaginationDto(statements.getNumber(), statements.getSize(), statements.getTotalElements(), statements.getTotalPages())
+        );
+    }
+
+    private StatementItemDto mapToDto(UUID walletId, StatementView view) {
+
+        if (view.getType().equalsIgnoreCase("deposit")) {
+            return mapToDeposit(view);
+        }
+
+        if (view.getType().equalsIgnoreCase("transfer")
+                && view.getWalletSender().equalsIgnoreCase(walletId.toString())) {
+
+            return mapWhenTransferSent(walletId, view);
+        }
+
+        if (view.getType().equalsIgnoreCase("transfer")
+                && view.getWalletReceiver().equalsIgnoreCase(walletId.toString())) {
+
+            return mapWhenTransferReceived(walletId, view);
+        }
+
+        throw new StatementException("invalid type " + view.getType());
+    }
+
+    private StatementItemDto mapWhenTransferReceived(UUID walletId, StatementView view) {
+        return new StatementItemDto(
+                view.getStatementId(),
+                view.getType(),
+                "money received from " + view.getWalletSender(),
+                view.getStatementValue(),
+                view.getStatementDateTime(),
+                StatementOperation.CREDIT
+        );
+    }
+
+    private StatementItemDto mapWhenTransferSent(UUID walletId, StatementView view) {
+        return new StatementItemDto(
+                view.getStatementId(),
+                view.getType(),
+                "money sent to " + view.getWalletReceiver(),
+                view.getStatementValue(),
+                view.getStatementDateTime(),
+                StatementOperation.DEBIT
+        );
+    }
+
+    private StatementItemDto mapToDeposit(StatementView view) {
+        return new StatementItemDto(
+                view.getStatementId(),
+                view.getType(),
+                "money deposit",
+                view.getStatementValue(),
+                view.getStatementDateTime(),
+                StatementOperation.CREDIT
+        );
+    }
+
+
 }
