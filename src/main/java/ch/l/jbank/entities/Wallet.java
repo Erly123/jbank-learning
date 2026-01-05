@@ -25,6 +25,9 @@ public class Wallet {
     @Column(name = "balance")
     private BigDecimal balance;
 
+    @Version
+    private Long version;
+
     public Wallet() {
     }
 
@@ -66,5 +69,13 @@ public class Wallet {
 
     public void setBalance(BigDecimal balance) {
         this.balance = balance;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }
