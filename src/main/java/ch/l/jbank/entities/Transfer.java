@@ -71,4 +71,5 @@ public class Transfer {
     public void setTransferDateTime(LocalDateTime transferDateTime) {
         this.transferDateTime = transferDateTime;
     }
+
 }
