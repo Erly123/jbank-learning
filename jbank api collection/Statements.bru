@@ -1,0 +1,25 @@
+meta {
+  name: Statements
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8080/wallets/4b48cdf0-9fa1-4d01-a90e-42110050e97e/statements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "sender": "087d674a-810c-4cb5-a248-0e2ad382bc52",
+    "receiver": "70e994d2-66cd-4c80-8cba-e02d0e92d635",
+    "value": 5
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
